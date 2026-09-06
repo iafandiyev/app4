@@ -169,22 +169,20 @@ struct ContentView: View {
                             Spacer()
                         }
                     } else {
-                        List {
-                            ForEach(filteredOrders) { order in
-                                OrderCardView(order: order, onSave: { newStatus, newLocation in
-                                    vm.updateOrder(orderId: order.id, status: newStatus, location: newLocation) { success in
-                                        if success {
-                                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(filteredOrders) { order in
+                                    OrderCardView(order: order, onSave: { newStatus, newLocation in
+                                        vm.updateOrder(orderId: order.id, status: newStatus, location: newLocation) { success in
+                                            if success {
+                                                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                            }
                                         }
-                                    }
-                                })
-                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                                .listRowBackground(Color.clear)
+                                    })
+                                }
                             }
-                        }
-                        .listStyle(.plain)
-                        .refreshable {
-                            vm.fetchOrders()
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
                         }
                     }
                 }
@@ -319,6 +317,7 @@ struct OrderCardView: View {
                     .foregroundColor(.blue)
                     .cornerRadius(8)
                 }
+                .buttonStyle(PlainButtonStyle())
                 
                 // WhatsApp
                 Button(action: {
@@ -339,6 +338,7 @@ struct OrderCardView: View {
                     .foregroundColor(.green)
                     .cornerRadius(8)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             
             Divider()
@@ -407,11 +407,12 @@ struct OrderCardView: View {
                             .fontWeight(.bold)
                         Spacer()
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
                     .background(isSavedFeedback ? Color.green : Color.blue)
                     .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .cornerRadius(10)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(16)
