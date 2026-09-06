@@ -28,10 +28,15 @@ class AdminViewModel: ObservableObject {
         
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             DispatchQueue.main.async {
+                if let error = error {
+                    self?.errorMessage = "Serverə qoşulmadı (\(error.localizedDescription)). Wi-Fi-ya qoşulduğunuzdan əmin olun."
+                    return
+                }
                 if let data = data {
                     do {
                         let decoded = try JSONDecoder().decode(OrdersResponse.self, from: data)
                         self?.orders = decoded.orders
+                        self?.errorMessage = nil
                     } catch {
                         self?.errorMessage = "Məlumat oxunmadı: \(error.localizedDescription)"
                     }
@@ -43,12 +48,20 @@ class AdminViewModel: ObservableObject {
     func pollNotifications() {
         guard let url = URL(string: "\(serverURL)/api/admin/notifications/poll") else { return }
         
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard let self = self, let data = data else { return }
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            guard let self = self else { return }
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.errorMessage = "Serverə qoşulmadı: \(error.localizedDescription)"
+                }
+                return
+            }
+            guard let data = data else { return }
             do {
                 let res = try JSONDecoder().decode(NotificationsResponse.self, from: data)
-                if let latest = res.notifications.first, latest.id > self.lastNotificationId {
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    self.errorMessage = nil
+                    if let latest = res.notifications.first, latest.id > self.lastNotificationId {
                         self.lastNotificationId = latest.id
                         self.newOrderAlert = "\(latest.title): \(latest.message)"
                         NotificationManager.shared.showLocalNotification(
@@ -129,6 +142,32 @@ struct ContentView: View {
                         .padding(.horizontal)
                         .padding(.top, 8)
                         .transition(.move(edge: .top))
+                    }
+                    
+                    // Network Connection Error Banner
+                    if let err = vm.errorMessage {
+                        HStack {
+                            Image(systemName: "wifi.slash")
+                                .foregroundColor(.white)
+                            Text(err)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .lineLimit(2)
+                            Spacer()
+                            Button(action: {
+                                vm.fetchOrders()
+                                vm.pollNotifications()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding(10)
+                        .background(Color.red.opacity(0.9))
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                        .padding(.top, 6)
                     }
                     
                     // Filter Chips
@@ -460,6 +499,22 @@ struct SettingsView: View {
                     TextField("Server URL", text: $tempURL)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
+                }
+                
+                Section(header: Text("Bildiriş & Səs Yoxlanışı"), footer: Text("Bu düyməyə basaraq tətbiqin səs və bildiriş pəncərəsinin işləməsini dərhal yoxlaya bilərsiniz.")) {
+                    Button(action: {
+                        NotificationManager.shared.showLocalNotification(
+                            title: "🔔 Test Bildirişi",
+                            body: "Kitabça Admin bildiriş və səs sistemi aktivdir!"
+                        )
+                    }) {
+                        HStack {
+                            Image(systemName: "bell.badge.fill")
+                                .foregroundColor(.blue)
+                            Text("Bildirişi Yoxla (Səs & Siqnal)")
+                                .foregroundColor(.primary)
+                        }
+                    }
                 }
             }
             .navigationTitle("Tənzimləmələr")
