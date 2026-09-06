@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 class AdminViewModel: ObservableObject {
     @Published var orders: [OrderItem] = []
@@ -7,7 +7,7 @@ class AdminViewModel: ObservableObject {
     @Published var lastNotificationId: Int = 0
     @Published var newOrderAlert: String?
     
-    @AppStorage("server_url") var serverURL: String = "http://127.0.0.1:8000"
+    @AppStorage("server_url") var serverURL: String = "http://192.168.1.84"
     
     private var pollTimer: Timer?
     
@@ -455,7 +455,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Server Ünvanı"), footer: Text("Nümunə: http://192.168.1.50:8000 və ya ngrok/domen ünvanı.")) {
+                Section(header: Text("Server Ünvanı"), footer: Text("Nümunə: http://192.168.1.84 və ya ngrok/domen ünvanı.")) {
                     TextField("Server URL", text: $tempURL)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
