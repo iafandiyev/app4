@@ -1,0 +1,69 @@
+﻿name: Build iPhone App (.IPA)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    name: Compile SwiftUI & Build .IPA
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode Environment
+        run: |
+          echo "Available Xcode versions:"
+          ls -d /Applications/Xcode*
+          if [ -d "/Applications/Xcode_15.4.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_15.4.app
+          elif [ -d "/Applications/Xcode_15.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_15.2.app
+          else
+            sudo xcode-select -s /Applications/Xcode.app
+          fi
+          xcodebuild -version
+
+      - name: Build iOS Application (.app)
+        run: |
+          mkdir -p build
+          xcodebuild clean build \
+            -project KitabcaAdmin.xcodeproj \
+            -scheme KitabcaAdmin \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CONFIGURATION_BUILD_DIR="${PWD}/build/Release-iphoneos"
+
+      - name: Package .app into .IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/Release-iphoneos/KitabcaAdmin.app build/Payload/
+          cd build
+          zip -r -9 ../KitabcaAdmin.ipa Payload/
+          cd ..
+          ls -lh KitabcaAdmin.ipa
+          echo "IPA Size:" $(du -h KitabcaAdmin.ipa)
+
+      - name: Upload .IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KitabcaAdmin-iOS-IPA
+          path: KitabcaAdmin.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "### 📱 iPhone .IPA Uğurla Hazırlandı!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Fayl adı:** KitabcaAdmin.ipa" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform:** iOS 15.0+" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quraşdırma:** Yuxarıdakı **Artifacts** bölməsindən .ipa faylını endirin və AltStore, Sideloadly və ya Scarlet vasitəsilə iPhone-a yükləyin." >> $GITHUB_STEP_SUMMARY
