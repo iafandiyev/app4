@@ -242,7 +242,7 @@ struct OrderCardView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header: Code & Status
             HStack {
-                Text(order.order_code)
+                Text("#" + order.order_code.replacingOccurrences(of: "kitab[", with: "").replacingOccurrences(of: "]", with: ""))
                     .font(.headline)
                     .fontWeight(.heavy)
                     .foregroundColor(.blue)
